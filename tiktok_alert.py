@@ -12,7 +12,7 @@ USERNAME = "ts.bs.phamduy"
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 GF_CHAT_ID = int(os.environ.get("GF_CHAT_ID"))
 
-THRESHOLDS = [5000, 10000, 15000, 20000, 25000]
+THRESHOLDS = [4742, 5000, 10000, 15000, 20000, 25000]
 NEAR_MARGIN = 10
 
 def send_telegram(message):
