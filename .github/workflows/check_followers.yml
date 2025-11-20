@@ -25,6 +25,4 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           GF_CHAT_ID: ${{ secrets.GF_CHAT_ID }}
-        run: |
-          sleep $((RANDOM % 240))
-          python3 tiktok_alert.py
+        run: python3 tiktok_alert.py

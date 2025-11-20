@@ -3,8 +3,6 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import json
-import time
-import random
 import os
 
 # Configuration
@@ -19,12 +17,10 @@ def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {"chat_id": GF_CHAT_ID, "text": message}
     try:
-        requests.get(url, params=payload, timeout=10)
+        response = requests.get(url, params=payload, timeout=10)
+        print(f"Telegram message sent. Status: {response.status_code}, Response: {response.text}")
     except Exception as e:
         print(f"Telegram error: {e}")
-
-# Random delay ±2 minutes
-time.sleep(random.randint(0, 240))
 
 url = f"https://www.tiktok.com/@{USERNAME}"
 headers = {
