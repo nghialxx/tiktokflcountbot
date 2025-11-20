@@ -11,7 +11,19 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 GF_CHAT_ID = int(os.environ.get("GF_CHAT_ID"))
 
 THRESHOLDS = [5000, 10000, 15000, 20000, 25000]
-NEAR_MARGIN = 10
+NEAR_MARGIN = 5  # Only alert in last 5 followers (e.g., 4995-4999)
+
+# Load last follower count
+last_count = 0
+try:
+    with open('last_count.json', 'r') as f:
+        data = json.load(f)
+        last_count = data.get('count', 0)
+        print(f"Last count: {last_count}")
+except FileNotFoundError:
+    print("No previous count found, starting fresh")
+except Exception as e:
+    print(f"Error loading last count: {e}")
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
@@ -60,9 +72,22 @@ try:
         # Output JSON
         if follower_count:
             print(json.dumps({"status": "success", "value": follower_count}))
+
+            # Only send alert if count increased AND within threshold range
             for threshold in THRESHOLDS:
                 if threshold - NEAR_MARGIN <= follower_count < threshold:
-                    send_telegram(f"Em Nghĩa thông báo @{USERNAME} kênh sắp đạt {threshold} followers! Hiện tại đã là: {follower_count} rồi!")
+                    if follower_count > last_count:
+                        send_telegram(f"Em Nghĩa thông báo @{USERNAME} kênh sắp đạt {threshold} followers! Hiện tại đã là: {follower_count} rồi!")
+                    else:
+                        print(f"Follower count {follower_count} unchanged from last check, skipping alert")
+
+            # Save current count
+            try:
+                with open('last_count.json', 'w') as f:
+                    json.dump({'count': follower_count}, f)
+                print(f"Saved new count: {follower_count}")
+            except Exception as e:
+                print(f"Error saving count: {e}")
         else:
             print(json.dumps({"status": "failed", "value": None}))
     else:
