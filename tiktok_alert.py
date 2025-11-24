@@ -92,8 +92,9 @@ try:
             current_time = time.time()
 
             # Check for milestone alerts (at exactly threshold for thresholds > 10K)
+            # Only alert within range: threshold to threshold+100 (e.g., 15000-15099)
             for threshold in THRESHOLDS:
-                if threshold > 10000 and follower_count >= threshold:
+                if threshold > 10000 and threshold <= follower_count < threshold + 100:
                     # Check if we've sent a milestone alert in the last hour
                     last_milestone_time = milestone_alerts.get(threshold, 0)
                     time_since_last = current_time - last_milestone_time
@@ -105,6 +106,8 @@ try:
                     else:
                         remaining_time = int((3600 - time_since_last) / 60)
                         print(f"Milestone {threshold} already alerted {int(time_since_last/60)} minutes ago, next alert in {remaining_time} minutes")
+                elif threshold > 10000 and follower_count >= threshold + 100:
+                    print(f"Follower count {follower_count} is past milestone range for {threshold} (stopped at {threshold + 100})")
 
             # Send pre-threshold alerts (approaching milestone)
             for threshold in THRESHOLDS:
