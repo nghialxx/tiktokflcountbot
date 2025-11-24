@@ -11,7 +11,17 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN")
 GF_CHAT_ID = int(os.environ.get("GF_CHAT_ID"))
 
 THRESHOLDS = [5000, 10000, 15000, 20000, 25000]
-NEAR_MARGIN = 5  # Only alert in last 5 followers (e.g., 4995-4999)
+
+def get_margin_for_threshold(threshold):
+    """
+    Get notification margin based on threshold.
+    - For thresholds <= 10K: Use 5 (can read exact counts like 9999)
+    - For thresholds > 10K: Use 100 (TikTok shows 14.9K, can't read exact)
+    """
+    if threshold <= 10000:
+        return 5
+    else:
+        return 100
 
 # Load last follower count
 last_count = 0
@@ -75,11 +85,13 @@ try:
 
             # Only send alert if count increased AND within threshold range
             for threshold in THRESHOLDS:
-                if threshold - NEAR_MARGIN <= follower_count < threshold:
+                margin = get_margin_for_threshold(threshold)
+                if threshold - margin <= follower_count < threshold:
                     if follower_count > last_count:
                         send_telegram(f"Em Nghĩa thông báo @{USERNAME} kênh sắp đạt {threshold} followers! Hiện tại đã là: {follower_count} rồi!")
+                        print(f"Alert sent for threshold {threshold} with margin {margin}")
                     else:
-                        print(f"Follower count {follower_count} unchanged from last check, skipping alert")
+                        print(f"Follower count {follower_count} unchanged from last check, skipping alert (threshold: {threshold}, margin: {margin})")
 
             # Save current count
             try:
