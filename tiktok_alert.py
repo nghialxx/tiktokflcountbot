@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import re
 import json
 import os
+import time
 
 # Configuration
 USERNAME = "ts.bs.phamduy"
@@ -23,13 +24,18 @@ def get_margin_for_threshold(threshold):
     else:
         return 100
 
-# Load last follower count
+# Load last follower count and milestone alert timestamps
 last_count = 0
+milestone_alerts = {}  # Track when we last sent milestone alerts: {threshold: timestamp}
 try:
     with open('last_count.json', 'r') as f:
         data = json.load(f)
         last_count = data.get('count', 0)
+        milestone_alerts = data.get('milestone_alerts', {})
+        # Convert string keys back to integers
+        milestone_alerts = {int(k): v for k, v in milestone_alerts.items()}
         print(f"Last count: {last_count}")
+        print(f"Milestone alerts: {milestone_alerts}")
 except FileNotFoundError:
     print("No previous count found, starting fresh")
 except Exception as e:
@@ -83,7 +89,24 @@ try:
         if follower_count:
             print(json.dumps({"status": "success", "value": follower_count}))
 
-            # Only send alert if count increased AND within threshold range
+            current_time = time.time()
+
+            # Check for milestone alerts (at exactly threshold for thresholds > 10K)
+            for threshold in THRESHOLDS:
+                if threshold > 10000 and follower_count >= threshold:
+                    # Check if we've sent a milestone alert in the last hour
+                    last_milestone_time = milestone_alerts.get(threshold, 0)
+                    time_since_last = current_time - last_milestone_time
+
+                    if time_since_last >= 3600:  # 1 hour = 3600 seconds
+                        send_telegram(f"Đã đạt mốc {threshold}, cap màn hình ngay kẻo miss :D")
+                        milestone_alerts[threshold] = current_time
+                        print(f"Milestone alert sent for {threshold}")
+                    else:
+                        remaining_time = int((3600 - time_since_last) / 60)
+                        print(f"Milestone {threshold} already alerted {int(time_since_last/60)} minutes ago, next alert in {remaining_time} minutes")
+
+            # Send pre-threshold alerts (approaching milestone)
             for threshold in THRESHOLDS:
                 margin = get_margin_for_threshold(threshold)
                 if threshold - margin <= follower_count < threshold:
@@ -93,10 +116,13 @@ try:
                     else:
                         print(f"Follower count {follower_count} unchanged from last check, skipping alert (threshold: {threshold}, margin: {margin})")
 
-            # Save current count
+            # Save current count and milestone alert timestamps
             try:
                 with open('last_count.json', 'w') as f:
-                    json.dump({'count': follower_count}, f)
+                    json.dump({
+                        'count': follower_count,
+                        'milestone_alerts': milestone_alerts
+                    }, f)
                 print(f"Saved new count: {follower_count}")
             except Exception as e:
                 print(f"Error saving count: {e}")
